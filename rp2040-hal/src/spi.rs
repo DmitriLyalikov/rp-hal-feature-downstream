@@ -194,7 +194,7 @@ impl<D: SpiDevice, const DS: u8> Spi<Disabled, D, DS> {
 
         self.device
             .sspimsc
-            .modify( |_, w| w.rxim().clear_bit().txim().clear_bit());
+            .modify( |_, w| w.rxim().set_bit().txim().set_bit());
         // Finally enable the SPI
         self.device.sspcr1.modify(|_, w| w.sse().set_bit());
 
