@@ -192,6 +192,9 @@ impl<D: SpiDevice, const DS: u8> Spi<Disabled, D, DS> {
             .sspdmacr
             .modify(|_, w| w.txdmae().set_bit().rxdmae().set_bit());
 
+        self.device
+            .sspimsc
+            .modify( |_, w| w.rxim().set_bit().txim().set_bit());
         // Finally enable the SPI
         self.device.sspcr1.modify(|_, w| w.sse().set_bit());
 
@@ -211,12 +214,7 @@ impl<D: SpiDevice, const DS: u8> Spi<Enabled, D, DS> {
     pub fn is_busy(&self) -> bool {
         self.device.sspsr.read().bsy().bit_is_set()
     }
-
-    pub fn ssm(&self) -> bool {
-        self.device.sspimsc.read().rxim().bit_is_set()
-    }
     
-
     /// Disable the spi to reset its configuration
     pub fn disable(self) -> Spi<Disabled, D, DS> {
         self.device.sspcr1.modify(|_, w| w.sse().clear_bit());
