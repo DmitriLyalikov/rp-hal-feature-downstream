@@ -215,6 +215,7 @@ impl<D: SpiDevice, const DS: u8> Spi<Enabled, D, DS> {
     pub fn ssm(&self) -> bool {
         self.device.sspimsc.read().rxim().bit_is_set()
     }
+    
 
     /// Disable the spi to reset its configuration
     pub fn disable(self) -> Spi<Disabled, D, DS> {
