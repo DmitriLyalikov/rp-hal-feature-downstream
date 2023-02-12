@@ -167,6 +167,13 @@ impl<D: SpiDevice, const DS: u8> Spi<Disabled, D, DS> {
         });
     }
 
+    /// Set the spi device as master or slave
+    fn set_slave(&mut self, slave: bool) {
+        if slave {
+            self.device.sspcr1.modify(|_, w| w.ms().set_bit());
+        }
+    }
+
     /// Initialize the SPI
     pub fn init<F: Into<HertzU32>, B: Into<HertzU32>>(
         mut self,
@@ -205,12 +212,17 @@ impl<D: SpiDevice, const DS: u8> Spi<Enabled, D, DS> {
         self.device.sspsr.read().bsy().bit_is_set()
     }
 
+    fn ssm(&self) -> bool {
+        self.device.sspimsc.read().rxim().bit_is_set()
+    }
+
     /// Disable the spi to reset its configuration
     pub fn disable(self) -> Spi<Disabled, D, DS> {
         self.device.sspcr1.modify(|_, w| w.sse().clear_bit());
 
         self.transition(Disabled { __private: () })
     }
+
 }
 
 macro_rules! impl_write {
