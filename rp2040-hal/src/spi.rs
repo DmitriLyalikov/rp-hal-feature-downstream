@@ -212,7 +212,7 @@ impl<D: SpiDevice, const DS: u8> Spi<Enabled, D, DS> {
         self.device.sspsr.read().bsy().bit_is_set()
     }
 
-    fn ssm(&self) -> bool {
+    pub fn ssm(&self) -> bool {
         self.device.sspimsc.read().rxim().bit_is_set()
     }
 
