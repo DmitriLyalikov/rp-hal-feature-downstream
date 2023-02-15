@@ -27,6 +27,7 @@ use eh1_0_alpha::spi as eh1;
 use embedded_hal::blocking::spi;
 use embedded_hal::spi::{FullDuplex, Mode, Phase, Polarity};
 use fugit::HertzU32;
+use fugit::RateExtU32;
 use pac::dma::ch::ch_ctrl_trig::TREQ_SEL_A;
 use pac::RESETS;
 
@@ -141,7 +142,6 @@ impl<S: State, D: SpiDevice, const DS: u8> Spi<S, D, DS> {
             .modify(|_, w| unsafe { w.scr().bits(postdiv) });
 
         // Return the frequency we were able to achieve
-        use fugit::RateExtU32;
         (freq_in / (prescale as u32 * (1 + postdiv as u32))).Hz()
     }
 }
@@ -167,38 +167,59 @@ impl<D: SpiDevice, const DS: u8> Spi<Disabled, D, DS> {
         });
     }
 
-    /// Set the spi device as master or slave
+    /// Set master/slave
     fn set_slave(&mut self, slave: bool) {
         if slave {
             self.device.sspcr1.modify(|_, w| w.ms().set_bit());
+        } else {
+            self.device.sspcr1.modify(|_, w| w.ms().clear_bit());
         }
     }
 
-    /// Initialize the SPI
-    pub fn init<F: Into<HertzU32>, B: Into<HertzU32>>(
+    fn init_spi<F: Into<HertzU32>, B: Into<HertzU32>>(
         mut self,
         resets: &mut RESETS,
         peri_frequency: F,
         baudrate: B,
         mode: &Mode,
+        slave: bool,
     ) -> Spi<Enabled, D, DS> {
         self.device.reset_bring_down(resets);
         self.device.reset_bring_up(resets);
 
         self.set_baudrate(peri_frequency, baudrate);
         self.set_format(DS, mode);
+        self.set_slave(slave);
         // Always enable DREQ signals -- harmless if DMA is not listening
-        //self.device
-        //    .sspdmacr
-         //   .modify(|_, w| w.txdmae().set_bit().rxdmae().set_bit());
+        self.device
+            .sspdmacr
+            .modify(|_, w| w.txdmae().set_bit().rxdmae().set_bit());
 
+        // Unmask the TXINTR and RXINTR masking registers
         self.device
             .sspimsc
-            .modify( |_, w| w.rxim().clear_bit().txim().clear_bit());
+            .modify( |_, w| w.rxim().set_bit().txim().set_bit());
+
         // Finally enable the SPI
         self.device.sspcr1.modify(|_, w| w.sse().set_bit());
 
         self.transition(Enabled { __private: () })
+    }
+
+    /// Initialize the SPI in master mode
+    pub fn init<F: Into<HertzU32>, B: Into<HertzU32>>(
+        self,
+        resets: &mut RESETS,
+        peri_frequency: F,
+        baudrate: B,
+        mode: &Mode,
+    ) -> Spi<Enabled, D, DS> {
+        self.init_spi(resets, peri_frequency, baudrate, mode, false)
+    }
+
+    /// Initialize the SPI in slave mode
+    pub fn init_slave(self, resets: &mut RESETS, mode: &Mode) -> Spi<Enabled, D, DS> {
+        self.init_spi(resets, 1000u32.Hz(), 1000u32.Hz(), mode, true)
     }
 }
 
@@ -210,18 +231,23 @@ impl<D: SpiDevice, const DS: u8> Spi<Enabled, D, DS> {
         self.device.sspsr.read().rne().bit_is_set()
     }
 
+    pub fn ssm(&self) -> bool {
+        self.device.sspimsc.read().rxim().bit_is_set()
+    }
+
+    
+
     /// Check if spi is busy transmitting and/or receiving
     pub fn is_busy(&self) -> bool {
         self.device.sspsr.read().bsy().bit_is_set()
     }
-    
+
     /// Disable the spi to reset its configuration
     pub fn disable(self) -> Spi<Disabled, D, DS> {
         self.device.sspcr1.modify(|_, w| w.sse().clear_bit());
 
         self.transition(Disabled { __private: () })
     }
-
 }
 
 macro_rules! impl_write {
@@ -353,7 +379,6 @@ macro_rules! impl_write {
                 if !self.is_readable() {
                     return Err(nb::Error::WouldBlock);
                 }
-
                 Ok(self.device.sspdr.read().data().bits() as $type)
             }
             fn write(&mut self, word: $type) -> Result<(), nb::Error<Infallible>> {
@@ -363,7 +388,6 @@ macro_rules! impl_write {
                 if !self.is_writable() {
                     return Err(nb::Error::WouldBlock);
                 }
-
                 self.device
                     .sspdr
                     .write(|w| unsafe { w.data().bits(word as u16) });
