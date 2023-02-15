@@ -219,7 +219,7 @@ impl<D: SpiDevice, const DS: u8> Spi<Disabled, D, DS> {
 
     /// Initialize the SPI in slave mode
     pub fn init_slave(self, resets: &mut RESETS, mode: &Mode) -> Spi<Enabled, D, DS> {
-        self.init_spi(resets, 1000u32.Hz(), 1000u32.Hz(), mode, true)
+        self.init_spi(resets, 10000u32.Hz(), 10000u32.Hz(), mode, true)
     }
 }
 
