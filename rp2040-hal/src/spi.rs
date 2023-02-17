@@ -97,6 +97,10 @@ impl<S: State, D: SpiDevice, const DS: u8> Spi<S, D, DS> {
         self.device
     }
 
+    pub fn ssm(&self) -> bool {
+        self.device.sspimsc.read().rxim().bit_is_set()
+    }
+
     /// Set baudrate based on peripheral clock
     ///
     /// Typically the peripheral clock is set to 125_000_000
@@ -230,12 +234,6 @@ impl<D: SpiDevice, const DS: u8> Spi<Enabled, D, DS> {
     fn is_readable(&self) -> bool {
         self.device.sspsr.read().rne().bit_is_set()
     }
-
-    pub fn ssm(&self) -> bool {
-        self.device.sspimsc.read().rxim().bit_is_set()
-    }
-
-    
 
     /// Check if spi is busy transmitting and/or receiving
     pub fn is_busy(&self) -> bool {
