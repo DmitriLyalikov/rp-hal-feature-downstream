@@ -97,8 +97,14 @@ impl<S: State, D: SpiDevice, const DS: u8> Spi<S, D, DS> {
         self.device
     }
 
-    pub fn ssm(&self) -> bool {
-        self.device.sspimsc.read().rxim().bit_is_set()
+    // Check if RX FIFO interrupt asserted
+    pub fn check_rxmis(&self) -> bool {
+        self.device.sspmis.read().rxmis().bit_is_set()
+    }
+
+    // Check if RX FIFO interrupt asserted
+    pub fn check_txmis(&self) -> bool {
+        self.device.sspmis.read().txmis().bit_is_set()
     }
 
     /// Set baudrate based on peripheral clock
