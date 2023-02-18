@@ -208,7 +208,7 @@ impl<D: SpiDevice, const DS: u8> Spi<Disabled, D, DS> {
         // Unmask the TXINTR and RXINTR masking registers
         self.device
             .sspimsc
-            .modify( |_, w| w.rxim().set_bit().txim().set_bit());
+            .modify( |_, w| w.txim().set_bit());
 
         // Finally enable the SPI
         self.device.sspcr1.modify(|_, w| w.sse().set_bit());
