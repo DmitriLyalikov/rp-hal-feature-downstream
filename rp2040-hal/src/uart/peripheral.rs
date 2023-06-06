@@ -141,8 +141,9 @@ impl<D: UartDevice, P: ValidUartPinout<D>> UartPeripheral<Enabled, D, P> {
     pub fn clear_rx_interrupt(&mut self) {
         self.device.uarticr.write
         (|w| unsafe {
-            w.rxic().set_bit()
-        })
+            w.rxic().set_bit();
+            w
+        });
     }
 
     /// Enables the Transmit Interrupt.

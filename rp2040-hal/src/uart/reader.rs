@@ -97,6 +97,12 @@ pub(crate) fn enable_rx_interrupt(rb: &RegisterBlock) {
         w
     });
 }
+/* 
+pub(crate) fn clear_rx_interrupt(rb: &RegisterBlock) {
+    rb.uarticr.modify(|_r, w| {
+        w.rxic().set_bit();
+    })
+}*/
 
 /// Disables the Receive Interrupt.
 pub(crate) fn disable_rx_interrupt(rb: &RegisterBlock) {
