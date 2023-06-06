@@ -97,6 +97,16 @@ impl<S: State, D: SpiDevice, const DS: u8> Spi<S, D, DS> {
         self.device
     }
 
+    // Check if RX FIFO interrupt asserted
+    pub fn check_rxmis(&self) -> bool {
+        self.device.sspmis.read().rxmis().bit_is_set()
+    }
+
+    // Check if RX FIFO interrupt asserted
+    pub fn check_txmis(&self) -> bool {
+        self.device.sspmis.read().txmis().bit_is_set()
+    }
+
     /// Set baudrate based on peripheral clock
     ///
     /// Typically the peripheral clock is set to 125_000_000
@@ -195,6 +205,11 @@ impl<D: SpiDevice, const DS: u8> Spi<Disabled, D, DS> {
             .sspdmacr
             .modify(|_, w| w.txdmae().set_bit().rxdmae().set_bit());
 
+        // Unmask the TXINTR and RXINTR masking registers
+        //self.device
+        //    .sspimsc
+        //    .modify( |_, w| w.txim().clear_bit().rxim().clear_bit());
+
         // Finally enable the SPI
         self.device.sspcr1.modify(|_, w| w.sse().set_bit());
 
@@ -214,7 +229,7 @@ impl<D: SpiDevice, const DS: u8> Spi<Disabled, D, DS> {
 
     /// Initialize the SPI in slave mode
     pub fn init_slave(self, resets: &mut RESETS, mode: &Mode) -> Spi<Enabled, D, DS> {
-        self.init_spi(resets, 1000u32.Hz(), 1000u32.Hz(), mode, true)
+        self.init_spi(resets, 10000u32.Hz(), 10000u32.Hz(), mode, true)
     }
 }
 
@@ -224,6 +239,12 @@ impl<D: SpiDevice, const DS: u8> Spi<Enabled, D, DS> {
     }
     fn is_readable(&self) -> bool {
         self.device.sspsr.read().rne().bit_is_set()
+    }
+
+    fn clear_interrupts(&self) {
+        self.device.sspicr.write(|w| unsafe {
+            w.rtic().set_bit()
+        });
     }
 
     /// Check if spi is busy transmitting and/or receiving
