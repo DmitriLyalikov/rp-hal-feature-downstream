@@ -241,6 +241,12 @@ impl<D: SpiDevice, const DS: u8> Spi<Enabled, D, DS> {
         self.device.sspsr.read().rne().bit_is_set()
     }
 
+    fn clear_interrupts(&self) {
+        self.device.sspicr.write(|w| unsafe {
+            w.rtic().set_bit()
+        });
+    }
+
     /// Check if spi is busy transmitting and/or receiving
     pub fn is_busy(&self) -> bool {
         self.device.sspsr.read().bsy().bit_is_set()
