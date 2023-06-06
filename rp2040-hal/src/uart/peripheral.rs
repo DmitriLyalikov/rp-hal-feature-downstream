@@ -138,14 +138,6 @@ impl<D: UartDevice, P: ValidUartPinout<D>> UartPeripheral<Enabled, D, P> {
         super::reader::enable_rx_interrupt(&self.device)
     }
 
-    pub fn clear_rx_interrupt(&mut self) {
-        self.device.uarticr.write
-        (|w| unsafe {
-            w.rxic().set_bit();
-            w
-        });
-    }
-
     /// Enables the Transmit Interrupt.
     ///
     /// The relevant UARTx IRQ will fire when there is space in the transmit FIFO.

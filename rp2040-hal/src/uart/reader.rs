@@ -97,12 +97,7 @@ pub(crate) fn enable_rx_interrupt(rb: &RegisterBlock) {
         w
     });
 }
-/* 
-pub(crate) fn clear_rx_interrupt(rb: &RegisterBlock) {
-    rb.uarticr.modify(|_r, w| {
-        w.rxic().set_bit();
-    })
-}*/
+
 
 /// Disables the Receive Interrupt.
 pub(crate) fn disable_rx_interrupt(rb: &RegisterBlock) {
@@ -217,6 +212,16 @@ impl<D: UartDevice, P: ValidUartPinout<D>> Reader<D, P> {
     pub fn enable_rx_interrupt(&mut self) {
         enable_rx_interrupt(&self.device)
     }
+
+    // Clears the receive interrupt
+    pub fn clear_rx_interrupt(&mut self) {
+        self.device.uartimsc.modify(|_r, w| {
+            w.rxim().clear_bit();
+            w.rtim().clear_bit();
+            w
+        });
+    }
+
 
     /// Disables the Receive Interrupt.
     pub fn disable_rx_interrupt(&mut self) {
